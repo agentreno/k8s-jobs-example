@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  creationTimestamp: null
+  name: exit-nonzero
+spec:
+  template:
+    metadata:
+      creationTimestamp: null
+    spec:
+      containers:
+      - image: busybox
+        imagePullPolicy: IfNotPresent
+        name: exit-nonzero
+        command: ["/bin/sh", "-c", "sleep 30 && exit 1"]
+        resources:
+          requests:
+            memory: 1Gi
+      restartPolicy: Never
+status: {}
