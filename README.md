@@ -14,6 +14,10 @@
 
 #### Non-zero exit code
 
+This failure condition simulated by [a busybox sleep and non-zero exit
+spec](exit-nonzero-job.yml) in the same way as an unhandled exception in a real
+task.
+
 https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy
 
 By default, jobs have a restartPolicy of Never and a backoffLimit of 6. This
@@ -49,3 +53,7 @@ kube_pod_container_resource_requests_memory_bytes and on(pod) (kube_pod_status_p
 ```
 
 ![exit-nonzero-memory-usage](images/exit-nonzero-memory-usage.png)
+
+#### Invalid PodSpec
+
+
