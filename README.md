@@ -40,6 +40,12 @@ Events:
   Warning  BackoffLimitExceeded  3m51s  job-controller  Job has reached the specified backoff limit
 ```
 
-`kube_pod_container_resource_requests_memory_bytes and on(pod) (kube_pod_status_phase{phase="Running"}==1)`
+Pod memory requests only apply from a scheduling point of view during the
+Running phase, so each pod in the job had a 1Gi allocation while they were
+running only. Graph also shows backoff timings nicely:
+
+```
+kube_pod_container_resource_requests_memory_bytes and on(pod) (kube_pod_status_phase{phase="Running"}==1)
+```
 
 ![exit-nonzero-memory-usage](images/exit-nonzero-memory-usage.png)
