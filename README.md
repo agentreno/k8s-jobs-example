@@ -56,4 +56,57 @@ kube_pod_container_resource_requests_memory_bytes and on(pod) (kube_pod_status_p
 
 #### Invalid PodSpec
 
+Pods with an [invalid podspec such as a non-existent secret
+mount](invalid-secret-job.yml) stay in the Waiting phase
+(CreateContainerConfigError is the reason). Do Waiting pods count towards memory
+requests from a scheduling point of view as well? It would appear so:
 
+```
+(⎈ |minikube:default) AWS: personal  ~/projects/k8s-jobs-example   master ●  kc describe node
+Name:               minikube
+...
+Non-terminated Pods:  (15 in total)
+  Namespace   Name                  CPU Requests  CPU Limits  Memory Requests  Memory Limits  AGE
+  ---------   ----                  ------------  ----------  ---------------  -------------  ---
+  default     invalid-secret-5st25  0 (0%)        0 (0%)      1Gi (6%)         0 (0%)         3m17s
+...
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests     Limits
+  --------           --------     ------
+  cpu                650m (5%)    0 (0%)
+  memory             1094Mi (6%)  170Mi (1%)
+...
+```
+
+To test further, the waiting pod memory request was increased to take most of
+the node's available memory, then another large memory pod was run:
+
+```
+Name:         should-be-unschedulable
+...
+Status:       Pending
+Containers:
+  should-be-unschedulable:
+    Requests:
+      memory:     10Gi
+Conditions:
+  PodScheduled   False
+...
+Events:
+  Type     Reason            Age                From               Message
+  ----     ------            ----               ----               -------
+  Warning  FailedScheduling  40s (x2 over 40s)  default-scheduler  0/1 nodes are available: 1 Insufficient memory.
+```
+
+Judging from this and the describe node output containing `Non-terminated Pods`,
+a likely better PromQL for measuring memory allocation is:
+
+```
+kube_pod_container_resource_requests_memory_bytes and on(pod) (kube_pod_status_phase{phase!~"Terminated"}==1)
+```
+
+The memory usage while running this job was from a single pod which stayed in
+the waiting phase while attempts to mount the non-existent secret were retried:
+
+![invalid-secret-memory-usage](images/invalid-secret-memory-usage.png)
