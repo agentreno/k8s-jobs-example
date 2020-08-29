@@ -110,3 +110,41 @@ The memory usage while running this job was from a single pod which stayed in
 the waiting phase while attempts to mount the non-existent secret were retried:
 
 ![invalid-secret-memory-usage](images/invalid-secret-memory-usage.png)
+
+#### Conclusion
+
+Two failure conditions (non-zero exit codes and invalid podspec) resulted in
+different retry and memory allocation. Non-zero exit codes took memory while the
+pod was running then released it, and retried backoffLimit times before leaving
+memory free once more. Invalid podspecs never freed memory, from a single pod
+that stayed in waiting state.
+
+### Question 2: Resource usage and allocation
+
+Choosing an appropriate request value probably requires data about the 'normal'
+resource consumption of a job. Particularly regarding memory requests, if too
+high, allocatable memory is limited and scheduling of other pods may be
+prevented.
+
+Can a [purposefully over-provisioned job](over-provisioned-job.yml) have it's
+resource usage measured and visualised to choose appropriate request values?
+
+The following prometheus query (which excludes pod overheads and some suspected
+double reporting from docker) shows actual memory usage:
+
+```
+container_memory_working_set_bytes{pod=~"over-provisioned-.*",container!~"POD",container!="",id!~".*docker.*"}
+```
+
+Also the same data is reported via the [metrics API and
+metrics-server](https://kubernetes.io/docs/tasks/debug-application-cluster/resource-metrics-pipeline/),
+queryable from `kubectl top pod`
+
+![over-provisioned-job-memory-usage](images/over-provisioned-job-memory-usage.png)
+
+Monitored over a sufficient period of time, making it more likely that all
+likely memory conditions are captured, a reasonable memory request can be
+assigned. This could be set to cover most peaks, but not necessarily all peaks.
+If there are rare peaks, the pod won't necessarily be evicted for exceeding
+it's request - it just makes it a [more likely candidate for
+eviction](https://kubernetes.io/docs/tasks/administer-cluster/out-of-resource/#evicting-end-user-pods)
