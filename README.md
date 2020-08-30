@@ -148,3 +148,33 @@ assigned. This could be set to cover most peaks, but not necessarily all peaks.
 If there are rare peaks, the pod won't necessarily be evicted for exceeding
 it's request - it just makes it a [more likely candidate for
 eviction](https://kubernetes.io/docs/tasks/administer-cluster/out-of-resource/#evicting-end-user-pods)
+
+### Question 3: Logging
+
+Jobs create pods, which are [not removed after
+completion/failure](https://kubernetes.io/docs/concepts/workloads/controllers/job/#job-termination-and-cleanup)
+to allow manual log retrieval.
+
+If the jobs are deleted, so are the corresponding pods it created. There is a
+[controller in alpha to remove finished
+jobs](https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/)
+but managed k8s services (like EKS but also others) tend to only support
+features that are in [beta or
+GA](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-stages).
+
+Higher-level controllers may clean up the jobs though (and therefore their
+pods) such as the CronJob controller and it's [failedJobsHistoryLimit and
+successfulJobsHistoryLimit
+settings](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#cronjobspec-v1beta1-batch).
+Because these settings retain *jobs* not *pods* it can appear it's not working
+well. For example, with failedJobsHistoryLimit set to 3 on a CronJob, a history
+of 3 failed jobs will be retained. Each of those jobs may have the default
+backoffLimit of 6. For a recurring exception in the job, the result is 18 pods
+in a failed state.
+
+Since jobs just run pods, the retaining their logs is the same general log
+aggregation and storage problem as for other kubernetes workloads. That would
+be solved with some combination of the [cluster-level logging
+architectures](https://kubernetes.io/docs/concepts/cluster-administration/logging/#cluster-level-logging-architectures)
+such as node logging agents, sidecar containers and direct app to logging
+backend integration.
