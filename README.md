@@ -153,7 +153,7 @@ eviction](https://kubernetes.io/docs/tasks/administer-cluster/out-of-resource/#e
 
 Jobs create pods, which are [not removed after
 completion/failure](https://kubernetes.io/docs/concepts/workloads/controllers/job/#job-termination-and-cleanup)
-to allow manual log retrieval.
+to allow manual log retrieval and getting other information from kube objects.
 
 If the jobs are deleted, so are the corresponding pods it created. There is a
 [controller in alpha to remove finished
